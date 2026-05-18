@@ -1,0 +1,85 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = findProperty('group') ?: 'eu.holistit'
+version = findProperty('version') ?: '0.1.0-SNAPSHOT'
+artifactId = findProperty('artifactId') ?: 'holistit-java-package-template'
+githubUrl = findProperty('githubUrl') ?: ''
+githubSshUrl = findProperty('githubSshUrl') ?: ''
+description = findProperty('description') ?: 'Template for Java packages at holistIT. Provides a standard structure and configuration for Java projects, including build settings, dependencies, and publishing configuration.'
+
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    withSourcesJar()
+    withJavadocJar()
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            groupId = project.group
+            artifactId = project.artifactId
+            version = project.version
+
+            pom {
+                name = project.name
+                description = project.description
+                url = project.githubUrl
+
+                licenses {
+                    license {
+                        name = 'Proprietary'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'holistit'
+                        name = 'holistIT'
+                    }
+                }
+
+                scm {
+                    connection = 'scm:git:' + project.githubSshUrl
+                    developerConnection = 'scm:git:ssh://' + project.githubSshUrl
+                    url = project.githubUrl
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url = uri(findProperty('packageUrl') ?: 'https://maven.pkg.github.com/gflachs/holistit-java-package-template')
+
+            credentials {
+                username = findProperty('gpr.user') ?: System.getenv('GITHUB_ACTOR')
+                password = findProperty('gpr.key') ?: System.getenv('GITHUB_TOKEN')
+            }
+        }
+    }
+}

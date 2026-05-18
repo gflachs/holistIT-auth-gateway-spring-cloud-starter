@@ -1,0 +1,77 @@
+name: Prepare release
+
+on:
+    workflow_dispatch:
+        inputs:
+            release_version:
+                description: "Release version, for example 0.1.0"
+                required: true
+                type: string
+
+permissions:
+    contents: write
+    pull-requests: write
+
+jobs:
+    prepare-release:
+        name: Prepare release PR
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout main
+              uses: actions/checkout@v6
+              with:
+                  ref: main
+
+            - name: Validate versions
+              shell: bash
+              run: |
+                  RELEASE_VERSION="${{ inputs.release_version }}"
+
+                  if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
+                    echo "Invalid release_version: $RELEASE_VERSION"
+                    echo "Expected format like 0.1.0 or 1.2.3-rc.1"
+                    exit 1
+                  fi
+
+                  if [[ "$RELEASE_VERSION" == *"-SNAPSHOT" ]]; then
+                    echo "release_version must not be a SNAPSHOT version"
+                    exit 1
+                  fi
+
+            - name: Update gradle.properties release version
+              shell: bash
+              run: |
+                  RELEASE_VERSION="${{ inputs.release_version }}"
+
+                  if ! grep -q '^version=' gradle.properties; then
+                    echo "version property not found in gradle.properties"
+                    exit 1
+                  fi
+
+                  sed -i "s/^version=.*/version=${RELEASE_VERSION}/" gradle.properties
+
+                  echo "Updated gradle.properties:"
+                  cat gradle.properties
+
+            - name: Create release pull request
+              uses: peter-evans/create-pull-request@v8
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  branch: release/${{ inputs.release_version }}
+                  base: main
+                  title: "Release ${{ inputs.release_version }}"
+                  commit-message: "Release ${{ inputs.release_version }}"
+                  body: |
+                      Prepares release `${{ inputs.release_version }}`.
+
+                      Changes:
+                      - Sets `gradle.properties` version to `${{ inputs.release_version }}`.
+
+                      After merging this PR:
+                      1. Create a GitHub Release with tag `v${{ inputs.release_version }}`.
+                      2. The publish workflow will verify that the release tag matches `gradle.properties`.
+                      3. Publish will fail if the version does not match.
+
+                  labels: |
+                      release

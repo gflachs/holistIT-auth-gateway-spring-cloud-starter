@@ -1,0 +1,74 @@
+name: Prepare next development version
+
+on:
+    workflow_dispatch:
+        inputs:
+            next_snapshot_version:
+                description: "Next snapshot version, for example 0.2.0-SNAPSHOT"
+                required: true
+                type: string
+
+permissions:
+    contents: write
+    pull-requests: write
+
+jobs:
+    prepare-next-development-version:
+        name: Prepare next development version PR
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout main
+              uses: actions/checkout@v6
+              with:
+                  ref: main
+
+            - name: Validate next snapshot version
+              shell: bash
+              run: |
+                  NEXT_SNAPSHOT_VERSION="${{ inputs.next_snapshot_version }}"
+
+                  if [[ ! "$NEXT_SNAPSHOT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-SNAPSHOT$ ]]; then
+                    echo "Invalid next_snapshot_version: $NEXT_SNAPSHOT_VERSION"
+                    echo "Expected format like 0.2.0-SNAPSHOT"
+                    exit 1
+                  fi
+
+            - name: Update gradle.properties snapshot version
+              shell: bash
+              run: |
+                  NEXT_SNAPSHOT_VERSION="${{ inputs.next_snapshot_version }}"
+
+                  if ! grep -q '^version=' gradle.properties; then
+                    echo "version property not found in gradle.properties"
+                    exit 1
+                  fi
+
+                  sed -i "s/^version=.*/version=${NEXT_SNAPSHOT_VERSION}/" gradle.properties
+
+                  echo "Updated gradle.properties:"
+                  cat gradle.properties
+
+            - name: Normalize branch version
+              id: branch
+              shell: bash
+              run: |
+                  SAFE_VERSION="${{ inputs.next_snapshot_version }}"
+                  SAFE_VERSION="${SAFE_VERSION//./-}"
+                  SAFE_VERSION="${SAFE_VERSION//_/-}"
+                  echo "name=$SAFE_VERSION" >> "$GITHUB_OUTPUT"
+
+            - name: Create next development version pull request
+              uses: peter-evans/create-pull-request@v8
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  branch: ${{ steps.branch.outputs.name }}
+                  base: main
+                  title: "Start ${{ inputs.next_snapshot_version }}"
+                  commit-message: "Start ${{ inputs.next_snapshot_version }}"
+                  body: |
+                      Sets the next development version to `${{ inputs.next_snapshot_version }}`.
+
+                      This PR should be merged after the previous release was published.
+                  labels: |
+                      chore
