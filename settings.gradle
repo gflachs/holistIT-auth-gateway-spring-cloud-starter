@@ -1,1 +1,29 @@
-rootProject.name = 'holistit-java-package-template'
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        mavenCentral()
+
+        maven {
+            name = 'GitHubPackagesAuthCore'
+            url = uri('https://maven.pkg.github.com/gflachs/holistit-auth-core')
+            credentials {
+                username = providers.gradleProperty('gpr.user')
+                        .orElse(providers.environmentVariable('GITHUB_ACTOR'))
+                        .orNull
+                password = providers.gradleProperty('gpr.key')
+                        .orElse(providers.environmentVariable('GITHUB_TOKEN'))
+                        .orNull
+            }
+        }
+    }
+}
+rootProject.name = 'auth_gateway_spring_cloud_starter'
+
+includeBuild('../holistIT-auth-core')
