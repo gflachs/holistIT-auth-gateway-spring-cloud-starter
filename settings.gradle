@@ -25,5 +25,3 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = 'auth_gateway_spring_cloud_starter'
-
-includeBuild('../holistIT-auth-core')
