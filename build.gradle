@@ -1,14 +1,16 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.adarshr.test-logger' version '4.0.0'
 }
 
 group = findProperty('group') ?: 'eu.holistit'
 version = findProperty('version') ?: '0.1.0-SNAPSHOT'
-artifactId = findProperty('artifactId') ?: 'holistit-java-package-template'
+artifactId = findProperty('artifactId') ?: 'holistIT-auth-gateway-spring-cloud-starter'
 githubUrl = findProperty('githubUrl') ?: ''
 githubSshUrl = findProperty('githubSshUrl') ?: ''
-description = findProperty('description') ?: 'Template for Java packages at holistIT. Provides a standard structure and configuration for Java projects, including build settings, dependencies, and publishing configuration.'
+description = findProperty('description') ?: 'Spring Cloud Starter for Auth Gateway by HolistIT.'
 
 
 java {
@@ -19,22 +21,61 @@ java {
     withJavadocJar()
 }
 
-repositories {
-    mavenCentral()
+dependencyManagement {
+    imports {
+        mavenBom 'org.springframework.boot:spring-boot-dependencies:4.0.2'
+        mavenBom 'org.springframework.cloud:spring-cloud-dependencies:2025.1.0'
+    }
 }
 
 dependencies {
+    api 'eu.holistit:holistit-auth-core:0.2.0'
 
+    api 'org.springframework.cloud:spring-cloud-starter-gateway-server-webflux'
+
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'io.projectreactor:reactor-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+
+    testLogging {
+        events 'failed', 'skipped'
+        exceptionFormat 'short'
+        showStandardStreams = false
+    }
 }
 
 tasks.withType(Javadoc).configureEach {
     options.addStringOption('Xdoclint:none', '-quiet')
 }
 
+testlogger {
+    theme 'mocha'
+    showExceptions true
+    showStackTraces true
+    showFullStackTraces false
+    showCauses true
+    slowThreshold 2000
+    showSummary true
+    showSimpleNames true
+    showPassed true
+    showSkipped true
+    showFailed true
+}
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -74,7 +115,7 @@ publishing {
     repositories {
         maven {
             name = 'GitHubPackages'
-            url = uri(findProperty('packageUrl') ?: 'https://maven.pkg.github.com/gflachs/holistit-java-package-template')
+            url = uri(findProperty('packageUrl') ?: 'https://maven.pkg.github.com/gflachs/auth-gateway-spring-cloud-starter')
 
             credentials {
                 username = findProperty('gpr.user') ?: System.getenv('GITHUB_ACTOR')

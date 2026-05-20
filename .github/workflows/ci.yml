@@ -29,5 +29,8 @@ jobs:
             - name: Set up Gradle
               uses: gradle/actions/setup-gradle@v6
 
-            - name: Build
-              run: ./gradlew clean build
+            - name: Build with Gradle
+              run: ./gradlew build
+              env:
+                  GITHUB_ACTOR: ${{ github.actor }}
+                  GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}

@@ -1,1 +1,1 @@
-# holistit-java-package-template
+# Auth Gateway Spring Cloud Starter
